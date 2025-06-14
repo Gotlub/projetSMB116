@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">project</string>
+    <string name="demande_de_contact">Demande de contact</string>
+    <string name="contacts">Mes contacts</string>
+    <string name="option">Options</string>
+    <string name="optionenvoi">Actualisation du GPS :</string>
+    <string name="optionenvoi2">Toutes les 3 secondes</string>
+    <string name="optionenvoidistance">Tous les 20 mètres</string>
+    <string name="optionenvoi3">Actualisation des contacts, toutes les 10 secondes</string>
+    <string name="latitude">Latitude :</string>
+    <string name="longitude">Longitude :</string>
+    <string name="addr">Adresse :</string>
+    <string name="position">Position actuel :</string>
+</resources>
