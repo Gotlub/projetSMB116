@@ -1,5 +1,6 @@
 package com.smb116.project.utils;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -66,8 +67,12 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.MyViewHo
     }
 
     private static String calcTime(long timeContact) {
+        Log.d("log d time contact", String.valueOf(timeContact));
         timeContact = System.currentTimeMillis() - timeContact;
-        Log.d("log d tc", String.valueOf(timeContact));
+        timeContact = timeContact / 1000;
+        Log.d("log d time contact2", String.valueOf(timeContact));
+        Log.d("log d time contact2", String.valueOf(timeContact));
+        Log.d("log d tc", String.valueOf(System.currentTimeMillis()));
         int day = (int)(timeContact / 86400);
         timeContact = timeContact % 86400;
         int hours = (int)(timeContact / 3600);
@@ -86,6 +91,7 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.MyViewHo
         return new MyViewHolder(view);
     }
 
+    @SuppressLint("DefaultLocale")
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         Contact contact = contactList.get(position);

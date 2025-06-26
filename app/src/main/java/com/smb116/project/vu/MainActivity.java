@@ -1,6 +1,8 @@
-package com.smb116.project;
+package com.smb116.project.vu;
 
-import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -11,15 +13,13 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -31,13 +31,13 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.smb116.project.R;
 import com.smb116.project.model.Contact;
 import com.smb116.project.model.SelfPosition;
+import com.smb116.project.utils.APILoadService;
 import com.smb116.project.utils.ContactAdapter;
-import com.smb116.project.utils.RetrofitInstance;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -50,7 +50,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int contactActualisationTime = 10;
     private static final int GPS_CODE = 100;
     private SelfPosition position;
-    private TextView txtLat, txtLon, txtAddr, optionsenvoidistance, optionsenvoitemp, optionsenvoicontact;
+    private APILoadService loadService;
+    private boolean bound = false;
+    private TextView demandeContact, txtLat, txtLon, txtAddr, optionsenvoidistance, optionsenvoitemp, optionsenvoicontact;
     private SeekBar seekBarDist, seekBarSec, seekBarContact;
     private RecyclerView recyclerView;
     private ImageView bearing;
@@ -95,6 +97,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         public void onProviderDisabled(@NonNull String provider) { }
     };
 
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            Log.d("log d connection", "onServiceConnected");
+            APILoadService.LocalBinder binder = (APILoadService.LocalBinder) iBinder;
+            loadService = binder.getService();
+            loadService.startInfoLoader(contactActualisationTime);
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            bound = false;
+        }
+    };
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
@@ -111,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void locationLautcher() {
         if (ActivityCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("log d" , "prout");
             ActivityCompat.requestPermissions(MainActivity.this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},GPS_CODE);
             return;
@@ -127,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void init() {
         geocoder = new Geocoder(getApplicationContext(), Locale.FRANCE);
+        demandeContact = findViewById(R.id.demandeContact);
         txtLat = findViewById(R.id.lat);
         txtLon = findViewById(R.id.lon);
         txtAddr = findViewById(R.id.addr);
@@ -143,6 +161,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        demandeContact.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getApplicationContext(), Demandes.class);
+                intent.putExtra("id", position.getId());
+                intent.putExtra("name", position.getName());
+                intent.putExtra("password", position.getMpd());
+                startActivity(intent);
+            }
+        });
         seekBarDist.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -189,11 +217,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                //todo
+                if(bound) {
+                    loadService.setRefreshRate(contactActualisationTime);
+                }
             }
         });
-        locationLautcher();
-        getContact();
+
     }
 
     @Override
@@ -201,24 +230,33 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onResume();
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        locationLautcher();
+        Intent intent = new Intent(this, APILoadService.class);
+        bindService(intent, connection, BIND_AUTO_CREATE);
+        Log.d("log d onResume", "bindService?");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         sensorManager.unregisterListener(this);
+        if (bound) {
+            loadService.stop();
+            //TODO loadService
+            unbindService(connection);
+            bound = false;
+        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        position = SelfPosition.getInstance();
+        position = new SelfPosition(this);
         setContentView(R.layout.activity_main);
+        //TODO RECUP l'utilisateur de l'intant et le set dans selfPosition
         init();
-        contactList = new ArrayList<>();
-        contactList.add(new Contact("pouet" , 46.882271, 0.080815, System.currentTimeMillis()));
-        contactList.add(new Contact("paspouet" , 46.842422, 0.090881, System.currentTimeMillis()));
+        contactList = position.getContactList();
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ContactAdapter(contactList);
         recyclerView.setAdapter(adapter);
@@ -235,6 +273,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    public void updateAdapter() {
+        Log.d("log d updateAdapter", "plop");
+        adapter.setContactList(position.getContactList());
+        adapter.notifyDataSetChanged();
     }
 
     @Override
@@ -265,34 +309,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    private void getContact() {
-        ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Please wait");
-        progressDialog.show();
 
-        RetrofitInstance.getApiInterface().getContactById("{\"id\":1}").enqueue(new Callback<List<Contact>>() {
-            @Override
-            public void onResponse(Call<List<Contact>> call, Response<List<Contact>> response) {
-                Log.d("log d getContact1", response.body().toString());
-                if (response.isSuccessful()) {
-                    List<Contact> contacts = response.body();
-                    adapter.setContactList(contacts);
-                    adapter.notifyDataSetChanged();
-                    Log.d("log d getContact", response.body().toString());
-                } else {
-                    // Gérer l'erreur (ex: code 401 ou 404)
-                    Log.d("log d API", "Erreur: " + response.code());
-                }
-                progressDialog.dismiss();
-            }
-
-            @Override
-            public void onFailure(Call<List<Contact>> call, Throwable t) {
-                Toast.makeText(MainActivity.this, t.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                Log.d("log d getContact fail", t.getLocalizedMessage());
-                Log.d("log d getContact fail", call.toString());
-                progressDialog.dismiss();
-            }
-        });
-    }
 }
