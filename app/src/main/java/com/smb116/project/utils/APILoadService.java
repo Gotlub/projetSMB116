@@ -15,6 +15,7 @@ import com.smb116.project.model.SelfPosition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -53,7 +54,8 @@ public class APILoadService extends Service {
         public void run() {
            while(running) {
                 getContact();
-                try {
+               setPosition();
+               try {
                     sleep(refreshRate * 1000);
                 } catch (InterruptedException e) {
                     Log.d("log d APIrunner", "Erreur: " + e);
@@ -85,6 +87,30 @@ public class APILoadService extends Service {
                     }
                 });
             }
+        }
+    }
+
+    private void setPosition() {
+        SelfPosition position = SelfPosition.getInstance();
+        if(position != null) {
+            String jsonEncoded = String.format(Locale.US,"{\"id\":%d,\"lat\":%.8f, \"lon\":%.8f, \"password\":\"%s\", \"time_\":%d}",
+                    position.getId(), position.getLat(), position.getLon(), position.getMpd(), System.currentTimeMillis());
+            Log.d("log d getPosition", jsonEncoded);
+            RetrofitInstance.getApiInterface().setActuPos(jsonEncoded).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        Log.d("log d setPosition", "isSuccessful");
+                    } else {
+                        Log.d("log d API", "Erreur: " + response.code());
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    Log.d("log d setPosition fail", "setPosition fail");
+                }
+            });
         }
     }
 

@@ -11,9 +11,9 @@ public class SelfPosition {
     private static SelfPosition instance = null;
     private double lat;
     private double lon;
-    private int id = 1;
-    private String name = "plop";
-    private String mpd = "plop";
+    private int id ;
+    private String name ;
+    private String mpd ;
 
     private MainActivity activity = null;
 
@@ -28,10 +28,6 @@ public class SelfPosition {
         this.mpd = mdp;
     }
 
-    public SelfPosition(MainActivity activityCompat) {
-        this.activity = activityCompat;
-        this.instance = this;
-    }
     private boolean setPosition = false;
 
     public static SelfPosition getInstance() {

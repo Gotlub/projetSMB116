@@ -252,7 +252,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        position = new SelfPosition(this);
+        Intent intent = getIntent();
+        position = new SelfPosition(this,
+                intent.getIntExtra("userId", 0),
+                intent.getStringExtra("name"),
+                intent.getStringExtra("password"));
         setContentView(R.layout.activity_main);
         //TODO RECUP l'utilisateur de l'intant et le set dans selfPosition
         init();

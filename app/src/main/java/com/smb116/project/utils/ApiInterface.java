@@ -28,6 +28,8 @@ public interface ApiInterface {
     @POST("demande/{json}")
     Call<Void> postDemande(@Path(value = "json", encoded = true) String jsonEncoded);
 
+    @PUT("actu/{json}")
+    Call<Void> setActuPos(@Path(value = "json", encoded = true) String jsonEncoded);
 
     @PUT("accept/{json}")
     Call<Void> setDemande(@Path(value = "json", encoded = true) String jsonEncoded);
