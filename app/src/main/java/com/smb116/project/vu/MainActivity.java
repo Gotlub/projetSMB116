@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SelfPosition position;
     private APILoadService loadService;
     private boolean bound = false;
-    private TextView demandeContact, txtLat, txtLon, txtAddr, optionsenvoidistance, optionsenvoitemp, optionsenvoicontact;
+    private TextView demandeContact, txtLat, txtLon, txtmcontact, txtAddr, optionsenvoidistance, optionsenvoitemp, optionsenvoicontact;
     private SeekBar seekBarDist, seekBarSec, seekBarContact;
     private RecyclerView recyclerView;
     private ImageView bearing;
@@ -69,11 +69,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         public void onLocationChanged(Location location) {
             Log.d("log d locationListener", "Location update: " + location);
             if (location.getAccuracy() <= 100) {
-                position.setLatLong(location.getLatitude(), location.getLongitude());
-                txtLat.setText(String.format("Latitude :%s", String.format("%.5f",location.getLatitude())));
-                txtLon.setText(String.format("Longitude :%s", String.format("%.5f",location.getLongitude())));
+                double lat = location.getLatitude();
+                double lon = location.getLongitude();
+                position.setLatLong(lat, lon);
+                txtLat.setText(String.format("Latitude :%s", String.format("%.5f",lat)));
+                txtLon.setText(String.format("Longitude :%s", String.format("%.5f",lon)));
                 try {
-                    List<Address> adresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                    List<Address> adresses = geocoder.getFromLocation(lat, lon, 1);
                     StringBuilder addr = new StringBuilder();
                     if(adresses != null && !adresses.isEmpty()) {
                         addr.append(adresses.get(0).getAddressLine(0)).append("\n");
@@ -148,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         txtLat = findViewById(R.id.lat);
         txtLon = findViewById(R.id.lon);
         txtAddr = findViewById(R.id.addr);
+        txtmcontact = findViewById(R.id.txtmcontact);
         optionsenvoidistance = findViewById(R.id.optionsenvoidistance);
         optionsenvoitemp = findViewById(R.id.optionsenvoitemp);
         optionsenvoicontact = findViewById(R.id.optionsenvoicontact);
@@ -283,6 +286,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Log.d("log d updateAdapter", "plop");
         adapter.setContactList(position.getContactList());
         adapter.notifyDataSetChanged();
+        String textDebut =  String.format("Mes %s contacts \n Le plus proche : %s , %.3f km",
+                adapter.getItemCount(), adapter.getPlusProcheLogin(),
+                adapter.getDistanceMin() ==  Double.POSITIVE_INFINITY ? 0 : adapter.getDistanceMin());
+        txtmcontact.setText(textDebut);
     }
 
     @Override

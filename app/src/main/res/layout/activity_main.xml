@@ -85,7 +85,7 @@
                 android:layout_marginVertical="8dp"
                 android:background="#CCCCCC" />
             <TextView
-                android:id="@+id/textView2"
+                android:id="@+id/txtmcontact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"

@@ -30,6 +30,9 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.MyViewHo
     public void setContactList(List<Contact> contactList) {
         this.contactList = contactList;
     }
+
+    private double distanceMin = Double.POSITIVE_INFINITY;
+    private String plusProcheLogin = "";
     private static String calcAngle(double lat1, double lon1, double lat2, double lon2) {
         double longitude1 = lon1;
         double longitude2 = lon2;
@@ -66,21 +69,19 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.MyViewHo
         return distance;
     }
 
-    private static String calcTime(long timeContact) {
-        Log.d("log d time contact", String.valueOf(timeContact));
-        timeContact = System.currentTimeMillis() - timeContact;
-        timeContact = timeContact / 1000;
-        Log.d("log d time contact2", String.valueOf(timeContact));
-        Log.d("log d time contact2", String.valueOf(timeContact));
-        Log.d("log d tc", String.valueOf(System.currentTimeMillis()));
-        int day = (int)(timeContact / 86400);
-        timeContact = timeContact % 86400;
-        int hours = (int)(timeContact / 3600);
-        timeContact = timeContact % 3600;
-        int minutes = (int)(timeContact / 60);
-        timeContact = timeContact % 60;
+    private static String calcTime(long pastTimestampMillis) {
+        long elapsedSeconds = (System.currentTimeMillis() - pastTimestampMillis) / 1000;
 
-        return String.valueOf(day) + " days " + String.valueOf(hours) + "h " + String.valueOf(minutes) + "m " + String.valueOf(timeContact) + "s" ;
+        int days = (int) (elapsedSeconds / 86400);
+        elapsedSeconds %= 86400;
+
+        int hours = (int) (elapsedSeconds / 3600);
+        elapsedSeconds %= 3600;
+
+        int minutes = (int) (elapsedSeconds / 60);
+        int seconds = (int) (elapsedSeconds % 60);
+
+        return String.format("%d days %02dh %02dm %02ds", days, hours, minutes, seconds);
     }
 
     @NonNull
@@ -103,10 +104,15 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.MyViewHo
         holder.lonCard.setText(String.format("Longitude: %s", String.valueOf(contact.getLon())));
         holder.timeCard.setText(String.format("Dernière mesure: %s", calcTime(contact.getLastCurrentTimeSeconds())));
         if(userPos.isSetPosition()) {
-            holder.distanceCard.setText(String.format("Distance: %s Km", String.format("%.3f", calcDist(userPos.getLat(),
-                    userPos.getLon(), contact.getLat(), contact.getLon()))));
+            double distance = calcDist(userPos.getLat(),
+                    userPos.getLon(), contact.getLat(), contact.getLon());
+            holder.distanceCard.setText(String.format("Distance: %s Km", String.format("%.3f", distance)));
             holder.direCard.setText(String.format("Direction:%s", calcAngle(userPos.getLat(),
                     userPos.getLon(), contact.getLat(), contact.getLon())));
+            if(distance <= distanceMin) {
+                distanceMin = distance;
+                plusProcheLogin = contact.getName();
+            }
         }
         holder.itemView.setOnClickListener(view -> {
             if (onClickListener != null) {
@@ -115,7 +121,13 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.MyViewHo
         });
 
     }
+    public double getDistanceMin() {
+        return distanceMin;
+    }
 
+    public String getPlusProcheLogin() {
+        return plusProcheLogin;
+    }
     public void setOnClickListener(OnClickListener onClickListener) {
         this.onClickListener = onClickListener;
     }

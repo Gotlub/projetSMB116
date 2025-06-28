@@ -92,9 +92,10 @@ public class APILoadService extends Service {
 
     private void setPosition() {
         SelfPosition position = SelfPosition.getInstance();
+        long timeNow = System.currentTimeMillis();
         if(position != null) {
             String jsonEncoded = String.format(Locale.US,"{\"id\":%d,\"lat\":%.8f, \"lon\":%.8f, \"password\":\"%s\", \"time_\":%d}",
-                    position.getId(), position.getLat(), position.getLon(), position.getMpd(), System.currentTimeMillis());
+                    position.getId(), position.getLat(), position.getLon(), position.getMpd(), timeNow);
             Log.d("log d getPosition", jsonEncoded);
             RetrofitInstance.getApiInterface().setActuPos(jsonEncoded).enqueue(new Callback<Void>() {
                 @Override
